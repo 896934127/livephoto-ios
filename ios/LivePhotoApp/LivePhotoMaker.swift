@@ -233,7 +233,10 @@ enum LivePhotoMaker {
             .appendingPathComponent("still-\(stem).jpg")
 
         var heicOK = false
-        if let data = ctx.heifRepresentation(of: propertied, colorSpace: cs, options: [:]) {
+        if let data = ctx.heifRepresentation(of: propertied,
+                                             format: CIFormat.RGBA8,
+                                             colorSpace: cs,
+                                             options: [:]) {
             heicOK = (try? data.write(to: heicURL)) != nil
         }
 
