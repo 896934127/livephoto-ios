@@ -1,0 +1,53 @@
+name: LivePhotoApp
+
+options:
+  bundleIdPrefix: com.xiaowenan
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+    # 侧载用：不签名直接出 .app，签名交给 Sideloadly
+    CODE_SIGN_IDENTITY: ""
+    CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGNING_ALLOWED: "NO"
+    CODE_SIGN_ENTITLEMENTS: ""
+
+targets:
+  LivePhotoApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: LivePhotoApp
+        excludes:
+          - "Info.plist"
+          # 早期「壳 + 连电脑」方案，留档但不参与编译
+          - "WebShell.swift"
+          - "SetupView.swift"
+    settings:
+      base:
+        PRODUCT_NAME: LivePhotoApp
+        PRODUCT_BUNDLE_IDENTIFIER: com.xiaowenan.livephoto
+        INFOPLIST_FILE: LivePhotoApp/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_OPTIMIZATION_LEVEL: "-O"
+        ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+        GENERATE_INFOPLIST_FILE: "NO"
+
+schemes:
+  LivePhotoApp:
+    build:
+      targets:
+        LivePhotoApp: all
+    run:
+      config: Debug
+    archive:
+      config: Release

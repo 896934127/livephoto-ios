@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 运行时数据
+data/
+*.log
+
+# 大文件不进仓库（ffmpeg 便携版 200 多 MB）
+tools/ffmpeg/
+tools/*.zip
+tools/*.gz
+tools/*.tar.*
+
+# iOS 构建产物（XcodeGen 会自动生成工程）
+ios/build/
+ios/*.xcodeproj/
+ios/*.xcworkspace/
+ios/DerivedData/
+*.ipa
+*.dSYM
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

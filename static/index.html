@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>实况图工厂 · 视频转实况照片</title>
+
+<!-- PWA：加到主屏幕后全屏独立运行，没有地址栏 -->
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#0d0f13">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="实况图">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/static/icons/favicon-64.png">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+      <circle cx="12" cy="12" r="9"></circle>
+      <circle cx="12" cy="12" r="3.2" fill="currentColor" stroke="none"></circle>
+      <path d="M12 3v3M12 18v3M3 12h3M18 12h3"></path>
+    </svg>
+    <div>
+      <h1>实况图工厂</h1>
+      <p>从视频里截一段，做成实况照片</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="badge" id="ffBadge">检测环境…</span>
+  </div>
+</header>
+
+<div class="install-tip hidden" id="installTip">
+  <span>点底部 <b>分享 ⬆</b> → <b>添加到主屏幕</b>，以后就是桌面 App 了</span>
+  <button id="installClose" aria-label="关闭">×</button>
+</div>
+
+<div class="layout">
+
+  <main class="stage">
+
+    <!-- 上传 -->
+    <section class="panel drop" id="dropzone">
+      <input type="file" id="fileInput" accept="video/*,.mkv,.mov,.avi,.m4v,.ts" hidden>
+      <div class="drop-inner">
+        <svg class="drop-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.4">
+          <rect x="6" y="12" width="26" height="24" rx="3"></rect>
+          <path d="M32 20l10-5v18l-10-5z"></path>
+          <path d="M15 24h8M19 20v8"></path>
+        </svg>
+        <h2>选一段视频</h2>
+        <p><button class="link" id="pickBtn">从相册挑一段</button>，或者把文件拖进这个框<br>
+           <span class="sub">支持 mp4 / mov / mkv / avi 等常见格式</span></p>
+        <p class="formats">可导出　iOS 实况照片　·　实况图（安卓）　·　GIF　·　MP4 片段</p>
+        <div class="progress hidden" id="upProgress">
+          <div class="bar"><i></i></div>
+          <span class="pct">0%</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 编辑区 -->
+    <section class="hidden" id="editor">
+
+      <div class="panel video-panel">
+        <div class="video-wrap">
+          <video id="video" controls playsinline preload="metadata"></video>
+        </div>
+        <div class="video-meta">
+          <span id="fileMeta">—</span>
+          <button class="ghost" id="resetBtn">换一个视频</button>
+        </div>
+      </div>
+
+      <div class="panel timeline-panel">
+        <div class="tl-head">
+          <div class="tl-title">选取片段</div>
+          <div class="tl-readout">
+            <label class="mini">
+              <span>起</span>
+              <input type="text" id="inStart" value="00:00.0" spellcheck="false">
+            </label>
+            <label class="mini">
+              <span>止</span>
+              <input type="text" id="inEnd" value="00:03.0" spellcheck="false">
+            </label>
+            <span class="dur-chip" id="durChip">3.00s</span>
+          </div>
+        </div>
+
+        <div class="timeline" id="timeline">
+          <div class="tl-strip" id="tlStrip"></div>
+          <div class="tl-shade left" id="shadeL"></div>
+          <div class="tl-shade right" id="shadeR"></div>
+          <div class="tl-sel" id="tlSel">
+            <div class="tl-handle l" data-side="l"></div>
+            <div class="tl-handle r" data-side="r"></div>
+          </div>
+          <div class="tl-cover" id="tlCover" title="封面帧位置">
+            <span></span>
+          </div>
+          <div class="tl-playhead" id="tlHead"></div>
+        </div>
+
+        <div class="tl-foot">
+          <div class="presets">
+            <button class="chip" data-dur="1">1 秒</button>
+            <button class="chip" data-dur="1.5">1.5 秒</button>
+            <button class="chip on" data-dur="3">3 秒</button>
+            <button class="chip" data-dur="5">5 秒</button>
+          </div>
+          <div class="tl-actions">
+            <label class="switch">
+              <input type="checkbox" id="loopSel" checked>
+              <span>循环播放选区</span>
+            </label>
+            <button class="ghost sm" id="markIn">把当前播放位置设为起点</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel options">
+        <div class="opt-col">
+          <div class="opt-title">输出内容</div>
+          <label class="check">
+            <input type="checkbox" name="fmt" value="motion">
+            <div>
+              <b>实况图（单文件）</b>
+              <small>JPEG 内嵌视频，安卓相册 / Google 相册能直接识别</small>
+            </div>
+          </label>
+          <label class="check">
+            <input type="checkbox" name="fmt" value="ios" checked>
+            <div>
+              <b>iOS 实况照片</b>
+              <small>打包成 .livp，存进「照片」就是实况</small>
+            </div>
+          </label>
+          <label class="check">
+            <input type="checkbox" name="fmt" value="gif">
+            <div>
+              <b>GIF 动图</b>
+              <small>哪儿都能发，画质差一点</small>
+            </div>
+          </label>
+          <label class="check">
+            <input type="checkbox" name="fmt" value="mp4">
+            <div>
+              <b>MP4 片段</b>
+              <small>H.264 重新编码，短视频平台直接用</small>
+            </div>
+          </label>
+          <label class="check">
+            <input type="checkbox" name="fmt" value="still">
+            <div>
+              <b>封面静帧 JPG</b>
+              <small>只要一张图</small>
+            </div>
+          </label>
+        </div>
+
+        <div class="opt-col">
+          <div class="opt-title">封面帧</div>
+          <div class="cover-box">
+            <div class="cover-img" id="coverImg">
+              <span class="cover-hint">拖动时间轴上的小三角选择</span>
+            </div>
+            <div class="cover-side">
+              <p class="tip">实况照片点开显示的那一帧。默认取片段正中。</p>
+              <button class="ghost sm" id="coverMid">取中间</button>
+              <button class="ghost sm" id="coverNow">取当前帧</button>
+            </div>
+          </div>
+
+          <div class="opt-title" style="margin-top:18px">画质</div>
+          <div class="row">
+            <label class="mini wide">
+              <span>长边</span>
+              <select id="maxEdge">
+                <option value="1080">1080 px</option>
+                <option value="1440" selected>1440 px</option>
+                <option value="1920">1920 px</option>
+                <option value="2560">原始尺寸</option>
+              </select>
+            </label>
+            <label class="mini wide">
+              <span>码率</span>
+              <select id="crf">
+                <option value="16">极高</option>
+                <option value="20" selected>高</option>
+                <option value="24">标准</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel action-bar">
+        <div class="action-info" id="actionInfo">选好片段就能生成了</div>
+        <button class="primary" id="goBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h13M13 6l6 6-6 6"></path>
+          </svg>
+          生成实况照片
+        </button>
+      </div>
+
+    </section>
+  </main>
+
+  <aside class="results">
+    <div class="panel result-panel">
+      <div class="result-head">
+        <span>生成结果</span>
+        <span class="count" id="resCount">0</span>
+      </div>
+      <div class="result-list" id="resultList">
+        <div class="empty" id="resEmpty">
+          还没有产出。<br>
+          选好片段后点右上角按钮。
+        </div>
+      </div>
+    </div>
+
+    <details class="panel guide">
+      <summary>生成完怎么存进相册</summary>
+      <div class="guide-body">
+
+        <h4>iPhone（就在这台手机上）</h4>
+        <ol>
+          <li>点结果卡片上的<b>「保存到手机」</b></li>
+          <li>弹出的分享面板里选<b>「存储到"文件"」</b></li>
+          <li>打开<b>「文件」App</b> → 「下载」文件夹，点那个 <code>.livp</code></li>
+          <li>会自动跳「照片」，点<b>「存储」</b>就进相册了</li>
+        </ol>
+        <p class="warn">要是点开没反应，说明系统版本不认这个包。<br>退回电脑那条路：下载 JPG + MOV，用爱思助手导入。</p>
+
+        <h4>安卓 / 鸿蒙</h4>
+        <ol>
+          <li>勾「实况图（单文件）」再生成一次</li>
+          <li>下载那个 <code>.jpg</code>，存到 <code>DCIM/Camera</code></li>
+          <li>相册里长按照片就会动</li>
+        </ol>
+
+        <h4>还连在电脑上</h4>
+        <p>把 JPG 和 MOV 两个一起丢进爱思助手的「实况照片」，比手机上折腾稳。</p>
+
+      </div>
+    </details>
+  </aside>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

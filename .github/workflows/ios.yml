@@ -1,0 +1,76 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+
+jobs:
+  build:
+    name: 编译未签名 ipa
+    runs-on: macos-14
+    timeout-minutes: 30
+
+    steps:
+      - name: 拉代码
+        uses: actions/checkout@v4
+
+      - name: 环境信息
+        run: |
+          xcodebuild -version
+          sw_vers
+
+      - name: 安装 XcodeGen
+        run: |
+          brew install xcodegen || brew install --quiet xcodegen
+
+      - name: 生成 Xcode 工程
+        working-directory: ios
+        run: |
+          xcodegen generate
+          ls -la
+
+      - name: 编译
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project LivePhotoApp.xcodeproj \
+            -scheme LivePhotoApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: 打包成 ipa
+        run: |
+          set -e
+          APP=$(find ios/build/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -1)
+          if [ -z "$APP" ]; then
+            echo "没找到 .app，编译产物："
+            find ios/build/Build/Products -maxdepth 3 -name "*.app"
+            exit 1
+          fi
+          echo "产物：$APP"
+
+          rm -rf out && mkdir -p out/Payload
+          cp -R "$APP" out/Payload/
+          cd out
+          zip -qry LivePhotoApp.ipa Payload
+          ls -lh LivePhotoApp.ipa
+          echo "IPA 大小：$(du -h LivePhotoApp.ipa | cut -f1)"
+
+      - name: 上传 ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: LivePhotoApp-ipa
+          path: out/LivePhotoApp.ipa
+          retention-days: 90
+          if-no-files-found: error
