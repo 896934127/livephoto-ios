@@ -1,0 +1,23 @@
+name: Diag
+
+on:
+  workflow_dispatch:
+
+jobs:
+  linux-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: hello
+        run: |
+          echo "linux runner ok"
+          uname -a
+
+  macos-probe:
+    runs-on: macos-14
+    timeout-minutes: 10
+    steps:
+      - name: hello
+        run: |
+          echo "macos runner ok"
+          xcodebuild -version
