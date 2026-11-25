@@ -3,6 +3,7 @@ import AVFoundation
 import Photos
 import UIKit
 import CoreImage
+import ImageIO
 
 // MARK: - 结果类型
 
