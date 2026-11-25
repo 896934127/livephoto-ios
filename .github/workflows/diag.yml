@@ -4,20 +4,16 @@ on:
   workflow_dispatch:
 
 jobs:
-  linux-probe:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: hello
-        run: |
-          echo "linux runner ok"
-          uname -a
-
-  macos-probe:
-    runs-on: macos-14
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-13, macos-14, macos-15, macos-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
       - name: hello
         run: |
-          echo "macos runner ok"
+          echo "runner ok: ${{ matrix.os }}"
+          sw_vers
           xcodebuild -version
